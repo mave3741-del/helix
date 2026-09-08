@@ -4,16 +4,28 @@ AI Organization OS. One Owner. One CEO. 1,000 persistent workers.
 
 Helix is an organizational operating system — not a chatbot and not a bag of independent agents. The organization is the intelligence. Models are replaceable brains.
 
-## Download (report + source)
+## Download (runnable zip)
+
+Click **Download** on the release. Unzip, then run `start.bat` (Windows) or `start.sh` (Mac/Linux).
 
 | What | Link |
 |---|---|
-| **Full zip** (report + source code) | [helix-source-and-report.zip](./helix-source-and-report.zip) |
-| **Project report** (Markdown) | [REPORT.md](./REPORT.md) |
-| **Project report** (HTML, print-ready) | [REPORT.html](./REPORT.html) |
-| **GitHub Release v1.1.0** | [Releases](https://github.com/mave3741-del/helix/releases/tag/v1.1.0) |
+| **Helix.zip** (runnable source + report) | [Download Helix.zip](https://github.com/mave3741-del/helix/releases/download/v1.1.0/Helix.zip) |
+| **Release page** | [v1.1.0](https://github.com/mave3741-del/helix/releases/tag/v1.1.0) |
+| **Project report** | [REPORT.md](./REPORT.md) · [REPORT.html](./REPORT.html) |
 
-Repo: [github.com/mave3741-del/helix](https://github.com/mave3741-del/helix)
+Or clone:
+
+```bash
+git clone https://github.com/mave3741-del/helix.git
+cd helix
+npm install
+npm run dev
+```
+
+Then open http://localhost:8080
+
+Needs [Node.js 20+](https://nodejs.org). See [START-HERE.txt](./START-HERE.txt).
 
 ## What it is
 
@@ -37,15 +49,6 @@ Repo: [github.com/mave3741-del/helix](https://github.com/mave3741-del/helix)
 | Local Heuristic | Always-on deterministic fallback |
 
 A down brain is not an organizational failure. Fallback preserves task state.
-
-## Run
-
-```bash
-npm install
-npm run dev
-```
-
-Open the app, dispatch an objective from Command, or run the sixteen scenarios from Prove.
 
 ## Stack
 

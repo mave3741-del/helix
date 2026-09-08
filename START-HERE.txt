@@ -1,0 +1,41 @@
+HELIX — Download and run
+========================
+
+What you downloaded
+- Full Helix source code
+- Project report (REPORT.md / REPORT.html)
+- Start scripts for Windows, Mac, and Linux
+
+Requirements
+- Node.js 20 or newer  →  https://nodejs.org
+
+Windows
+1. Unzip Helix.zip
+2. Open the helix folder
+3. Double-click start.bat
+4. Wait for npm install, then open  http://localhost:8080
+
+Mac / Linux
+1. Unzip Helix.zip
+2. Open Terminal in the helix folder
+3. chmod +x start.sh
+4. ./start.sh
+5. Open  http://localhost:8080
+
+Manual
+  npm install
+  npm run dev
+
+Then open Helix in your browser at http://localhost:8080
+
+Urdu / Roman Urdu
+1. Helix.zip extract karo
+2. Folder ke andar start.bat (Windows) ya start.sh (Mac/Linux) chalao
+3. Browser mein http://localhost:8080 kholo
+
+Live Grok 4.5 calls need an XAI_API_KEY in the environment.
+Without it, Helix still runs with the local heuristic brain.
+
+Report
+- REPORT.md
+- REPORT.html  (open in any browser)
