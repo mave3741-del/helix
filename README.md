@@ -4,6 +4,17 @@ AI Organization OS. One Owner. One CEO. 1,000 persistent workers.
 
 Helix is an organizational operating system — not a chatbot and not a bag of independent agents. The organization is the intelligence. Models are replaceable brains.
 
+## Download (report + source)
+
+| What | Link |
+|---|---|
+| **Full zip** (report + source code) | [helix-source-and-report.zip](./helix-source-and-report.zip) |
+| **Project report** (Markdown) | [REPORT.md](./REPORT.md) |
+| **Project report** (HTML, print-ready) | [REPORT.html](./REPORT.html) |
+| **GitHub Release v1.0.0** | [Releases](https://github.com/mave3741-del/helix/releases/tag/v1.0.0) |
+
+Repo: [github.com/mave3741-del/helix](https://github.com/mave3741-del/helix)
+
 ## What it is
 
 - **Owner** sets mission, objectives, and risk approvals
