@@ -1,4 +1,6 @@
 import { mulberry32, padId } from "@/lib/utils";
+import { makeAgent } from "@/runtime/worker/profile";
+
 import {
   BRAIN_SEED,
   CAPABILITIES,
@@ -45,6 +47,8 @@ function perf(rand: () => number, bias = 0.86): PerformanceProfile {
     repeats: Math.floor(rand() * 2),
     toolAccuracy: Math.min(0.99, quality + 0.02),
     compliance: Math.min(0.99, 0.9 + rand() * 0.09),
+    hallucinationFlags: 0,
+    cost: 0,
   };
 }
 
@@ -114,6 +118,10 @@ function rankFor(role: WorkerRole, i: number): WorkerRank {
   return "standard";
 }
 
+function withAgent(w: Omit<Worker, "agent">): Worker {
+  return { ...w, agent: makeAgent(w) };
+}
+
 function workerName(i: number): string {
   const a = GIVEN[i % GIVEN.length];
   const b = FAMILY[Math.floor(i / GIVEN.length) % FAMILY.length];
@@ -158,6 +166,9 @@ export function emptyKpis(): Kpis {
     availableWorkers: 1000,
     trainingWorkers: 0,
     fallbacks: 0,
+    liveTurns: 0,
+    localTurns: 0,
+    unknowns: 0,
   };
 }
 
@@ -174,7 +185,7 @@ export function seedOrganization(now = Date.now()): OrgSnapshot {
     execIds.push(id);
     const def = EXEC_TITLES[i - 1];
     const caps = pickCaps("executive", def.dept, rand);
-    workers[id] = {
+    workers[id] = withAgent({
       id,
       name: workerName(i - 1),
       role: "executive",
@@ -197,7 +208,7 @@ export function seedOrganization(now = Date.now()): OrgSnapshot {
       reserved: false,
       disabledReason: null,
       lastActiveAt: now,
-    };
+    });
     workerOrder.push(id);
   }
 
@@ -207,7 +218,7 @@ export function seedOrganization(now = Date.now()): OrgSnapshot {
     managerIds.push(id);
     const execId = execIds.find((e) => workers[e].departmentId === d.id) ?? execIds[idx % 8];
     const caps = pickCaps("manager", d.id, rand);
-    workers[id] = {
+    workers[id] = withAgent({
       id,
       name: workerName(8 + idx),
       role: "manager",
@@ -230,7 +241,7 @@ export function seedOrganization(now = Date.now()): OrgSnapshot {
       reserved: false,
       disabledReason: null,
       lastActiveAt: now,
-    };
+    });
     workerOrder.push(id);
   });
 
@@ -243,7 +254,7 @@ export function seedOrganization(now = Date.now()): OrgSnapshot {
       deptSup.push(id);
       supervisorIds.push(id);
       const caps = pickCaps("supervisor", d.id, rand);
-      workers[id] = {
+      workers[id] = withAgent({
         id,
         name: workerName(20 + di * 4 + t),
         role: "supervisor",
@@ -266,7 +277,7 @@ export function seedOrganization(now = Date.now()): OrgSnapshot {
         reserved: false,
         disabledReason: null,
         lastActiveAt: now,
-      };
+      });
       workerOrder.push(id);
     }
     departments.push({
@@ -320,7 +331,7 @@ export function seedOrganization(now = Date.now()): OrgSnapshot {
                   ? `Analyst`
                   : `Worker`;
 
-    workers[id] = {
+    workers[id] = withAgent({
       id,
       name: workerName(i - 1),
       role,
@@ -343,7 +354,7 @@ export function seedOrganization(now = Date.now()): OrgSnapshot {
       reserved,
       disabledReason: null,
       lastActiveAt: now,
-    };
+    });
     workerOrder.push(id);
     teamBuckets[supIndex].push(id);
   }
@@ -366,6 +377,8 @@ export function seedOrganization(now = Date.now()): OrgSnapshot {
 
   const skills: Skill[] = SKILL_SEED.map((s, i) => ({
     ...s,
+    inputs: ["task", "scoped-memory", "skill-spec"],
+    outputs: ["artifact", "evidence", "claim-status"],
     creatorId: managerIds[i % managerIds.length],
     reviewerId: execIds[i % execIds.length],
     changeHistory: [
@@ -511,8 +524,12 @@ export function seedOrganization(now = Date.now()): OrgSnapshot {
     ranAt: null,
   }));
 
+  if (workerOrder.length !== 1000) {
+    throw new Error(`Helix invariant failed: ${workerOrder.length} workers, expected 1000`);
+  }
+
   return {
-    version: 1,
+    version: 2,
     identity: {
       name: "Helix",
       mission:
@@ -543,6 +560,13 @@ export function seedOrganization(now = Date.now()): OrgSnapshot {
     scenarios,
     faults: emptyFaults(),
     budgets: { tokens: 0, tokenCap: 250000, apiCalls: 0, apiCap: 40 },
+    runtime: {
+      liveMode: true,
+      liveInflight: 0,
+      liveCap: 4,
+      mode: "production",
+      isolated: [],
+    },
     tickMs: 420,
     epoch: 1,
     lastTickAt: now,

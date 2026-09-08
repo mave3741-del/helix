@@ -15,8 +15,7 @@ export function ScenariosView() {
         <p className="font-mono text-[11px] tracking-[0.2em] text-muted uppercase">Acceptance</p>
         <h1 className="mt-1 text-3xl font-medium tracking-tight">Prove the organization.</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted">
-          Fourteen non-negotiable tests. A working UI is not enough. Run each scenario against the
-          live operating layer.
+          Fourteen non-negotiable tests plus identity and firewall proofs. A working UI is not enough.
         </p>
       </div>
 
@@ -27,7 +26,7 @@ export function ScenariosView() {
             for (const d of SCENARIO_DEFS) store.runScenario(d.id);
           }}
         >
-          Run all fourteen
+          Run all tests
         </Button>
       </div>
 

@@ -185,9 +185,13 @@ export function WorkforceView() {
               <Badge>{worker.modelId}</Badge>
             </div>
             <dl className="mt-4 space-y-2 text-sm">
+              <Row k="Registry" v={worker.agent?.registryId ?? worker.id} />
               <Row k="Department" v={depts.find((d) => d.id === worker.departmentId)?.name ?? worker.departmentId} />
               <Row k="Supervisor" v={worker.supervisorId ?? "—"} />
               <Row k="Manager" v={worker.managerId ?? "—"} />
+              <Row k="Specialization" v={worker.agent?.specialization ?? "—"} />
+              <Row k="Style" v={worker.agent ? `${worker.agent.style} / ${worker.agent.verbosity}` : "—"} />
+              <Row k="Health" v={worker.agent?.health ?? "—"} />
               <Row k="Assignment" v={worker.currentAssignment ?? "none"} />
               <Row k="Capabilities" v={worker.capabilities.join(", ")} />
               <Row k="Permissions" v={worker.permissions.join(", ")} />

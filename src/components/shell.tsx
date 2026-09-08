@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { orgTone } from "@/components/status";
 import { cn, formatCompact } from "@/lib/utils";
+import { drainLiveQueue } from "@/runtime/live-drain";
 import { useOrgStore } from "@/store/org-store";
 
 const NAV = [
@@ -70,6 +71,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     const id = window.setInterval(() => {
       useOrgStore.getState().tick();
+      void drainLiveQueue();
     }, 420);
     return () => window.clearInterval(id);
   }, [hydrated]);

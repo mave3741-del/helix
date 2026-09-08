@@ -11,6 +11,7 @@ import {
 import { SCENARIO_DEFS } from "./scenarios";
 import { seedOrganization } from "./seed";
 import type { OrgSnapshot, ScenarioResult } from "./types";
+import { scopedMemory } from "@/runtime/memory/firewall";
 
 function log(s: ScenarioResult, line: string) {
   s.log.push(line);
@@ -43,6 +44,8 @@ export function runScenario(state: OrgSnapshot, id: string): ScenarioResult {
   result.log = [];
   result.ranAt = Date.now();
   if (state.orgStatus === "shutdown") setOrgStatus(state, "running");
+  const prevLive = state.runtime?.liveMode;
+  if (state.runtime) state.runtime.liveMode = false;
 
   try {
     switch (id) {
@@ -272,11 +275,46 @@ export function runScenario(state: OrgSnapshot, id: string): ScenarioResult {
         setBrainAvailable(state, "grok-4.5", true);
         break;
       }
+      case "t15": {
+        const ids = state.workerOrder;
+        if (ids.length !== 1000) return failReturn(result, `Count ${ids.length} !== 1000`);
+        if (new Set(ids).size !== 1000) return failReturn(result, "Duplicate worker IDs");
+        if (ids[0] !== "W-0001" || ids[999] !== "W-1000") return failReturn(result, "ID range broken");
+        const missingAgent = ids.filter((id) => !state.workers[id]?.agent?.registryId).length;
+        if (missingAgent) return failReturn(result, `${missingAgent} workers lack agent packages`);
+        pass(result, "Exactly 1,000 unique persistent identities with agent packages");
+        break;
+      }
+      case "t16": {
+        const worker = state.workers["W-0100"];
+        const other = "W-0002";
+        state.memory.unshift({
+          id: "mem-fw-test",
+          layer: "worker",
+          ownerId: other,
+          title: "private note",
+          content: "must not leak",
+          status: "verified",
+          claim: "verified_fact",
+          tags: ["research"],
+          evidence: [],
+          createdBy: other,
+          createdAt: Date.now(),
+          relatedSkillId: null,
+          relatedTaskId: null,
+        });
+        const hits = scopedMemory(state, worker, "research", 12);
+        if (hits.some((m) => m.id === "mem-fw-test")) return failReturn(result, "Firewall leaked private memory");
+        pass(result, "Context firewall blocked unauthorized worker memory");
+        break;
+      }
       default:
         return failReturn(result, "Unknown scenario");
     }
   } catch (err) {
     return failReturn(result, err instanceof Error ? err.message : "Scenario threw");
+  } finally {
+    if (state.runtime) state.runtime.liveMode = prevLive ?? true;
   }
 
   if (result.status === "running") {

@@ -49,7 +49,7 @@ export function BrainsView() {
                 <PanelTitle kicker={b.provider} title={b.name} />
                 <p className="text-sm text-muted">{b.specialty}</p>
               </div>
-              <Badge tone={b.available ? "ok" : "danger"}>{b.available ? "available" : "down"}</Badge>
+              <Badge tone={b.available ? "ok" : "danger"}>{b.health ?? (b.available ? "up" : "down")}</Badge>
             </div>
             <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
               <div>
@@ -61,8 +61,8 @@ export function BrainsView() {
                 <dd className="font-mono">{b.latencyMs}ms</dd>
               </div>
               <div>
-                <dt className="text-muted">Cost</dt>
-                <dd className="font-mono">{b.cost}</dd>
+                <dt className="text-muted">Cost class</dt>
+                <dd className="font-mono">{b.costClass ?? "unknown"}</dd>
               </div>
               <div>
                 <dt className="text-muted">Tokens</dt>

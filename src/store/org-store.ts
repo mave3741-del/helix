@@ -5,14 +5,18 @@ import {
   disableWorker,
   emergencyShutdown,
   grantApproval,
+  isolate,
   issueObjective,
   setBrainAvailable,
+  setLiveMode,
   setOrgStatus,
   tick,
 } from "@/org/engine";
 import { idbStorage } from "@/org/persist";
 import { runScenario } from "@/org/run-scenario";
 import { seedOrganization } from "@/org/seed";
+import { migrateSnapshot } from "@/runtime/migrate";
+import { applyLiveText } from "@/runtime/worker/kernel";
 import type { FaultState, OrgSnapshot } from "@/org/types";
 
 export type ViewId =
@@ -47,7 +51,7 @@ type OrgStore = OrgSnapshot & {
       strategy: string;
       departments: string[];
       skillGaps: string[];
-      risk: "low" | "medium" | "high";
+      risk: "low" | "medium" | "high" | "critical";
     },
   ) => void;
   setPlanning: (v: boolean, error?: string | null) => void;
@@ -64,6 +68,11 @@ type OrgStore = OrgSnapshot & {
   resetOrg: () => void;
   setMission: (mission: string) => void;
   setOwnerName: (name: string) => void;
+  setLive: (on: boolean) => void;
+  isolate: (kind: "worker" | "department" | "team" | "task" | "tool" | "skill" | "provider", id: string) => void;
+  beginLive: () => void;
+  applyLive: (taskId: string, text: string, brainId: string, tokens: number) => void;
+  failLive: (taskId: string) => void;
 };
 
 const seeded = seedOrganization();
@@ -185,9 +194,50 @@ export const useOrgStore = create<OrgStore>()(
         set((s) => ({ identity: { ...s.identity, mission }, epoch: s.epoch + 1 })),
       setOwnerName: (ownerName) =>
         set((s) => ({ identity: { ...s.identity, ownerName }, epoch: s.epoch + 1 })),
+      setLive: (on) =>
+        set((s) => {
+          setLiveMode(s, on);
+          return { runtime: { ...s.runtime }, epoch: s.epoch + 1 };
+        }),
+      isolate: (kind, id) =>
+        set((s) => {
+          isolate(s, kind, id);
+          return { epoch: s.epoch + 1, runtime: { ...s.runtime } };
+        }),
+      beginLive: () =>
+        set((s) => {
+          s.runtime.liveInflight = 1;
+          return { runtime: { ...s.runtime } };
+        }),
+      applyLive: (taskId, text, brainId, tokens) =>
+        set((s) => {
+          const task = s.tasks[taskId];
+          const worker = task?.workerId ? s.workers[task.workerId] : null;
+          if (task && worker) applyLiveText(s, task, worker, text, brainId, tokens);
+          s.runtime.liveInflight = 0;
+          s.budgets.apiCalls += 1;
+          return {
+            epoch: s.epoch + 1,
+            runtime: { ...s.runtime },
+            kpis: s.kpis,
+            budgets: { ...s.budgets },
+          };
+        }),
+      failLive: (taskId) =>
+        set((s) => {
+          const task = s.tasks[taskId];
+          if (task) {
+            task.livePending = false;
+            task.executionSource = "fallback";
+            task.trace = [...(task.trace ?? []), "live brain failed — local kernel continues"];
+          }
+          s.runtime.liveInflight = 0;
+          s.kpis.fallbacks += 1;
+          return { epoch: s.epoch + 1, runtime: { ...s.runtime }, kpis: s.kpis };
+        }),
     }),
     {
-      name: "helix-org-os-v2",
+      name: "helix-org-os-v3",
       storage: createJSONStorage(() => idbStorage),
       skipHydration: true,
       partialize: (s) => {
@@ -219,6 +269,11 @@ export const useOrgStore = create<OrgStore>()(
           resetOrg: _ro,
           setMission: _sm,
           setOwnerName: _so,
+          setLive: _sl,
+          isolate: _iso,
+          beginLive: _bl,
+          applyLive: _al,
+          failLive: _fl,
           ...snap
         } = s;
         return snap;
@@ -228,6 +283,8 @@ export const useOrgStore = create<OrgStore>()(
         if (!state.workerOrder || state.workerOrder.length !== 1000) {
           const fresh = seedOrganization();
           Object.assign(state, fresh);
+        } else {
+          migrateSnapshot(state);
         }
         state.hydrated = true;
       },

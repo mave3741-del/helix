@@ -1,6 +1,6 @@
 export type OrgStatus = "booting" | "running" | "paused" | "shutdown" | "recovering";
 
-export type RiskLevel = "low" | "medium" | "high";
+export type RiskLevel = "low" | "medium" | "high" | "critical";
 
 export type WorkerRole =
   | "executive"
@@ -25,16 +25,25 @@ export type WorkerStatus =
   | "training"
   | "recovery"
   | "reserved"
-  | "disabled";
+  | "disabled"
+  | "blocked"
+  | "suspended";
 
 export type WorkerRank = "junior" | "standard" | "senior" | "expert" | "lead";
+
+export type WorkerHealth = "healthy" | "degraded" | "training" | "blocked" | "unavailable" | "suspended";
+
+export type ReasoningStyle = "analytic" | "synthetic" | "skeptical" | "procedural" | "adversarial";
 
 export type KnowledgeStatus =
   | "verified"
   | "unverified"
   | "rejected"
   | "superseded"
-  | "under_review";
+  | "under_review"
+  | "proposed"
+  | "testing"
+  | "deprecated";
 
 export type ClaimKind =
   | "fact"
@@ -58,7 +67,11 @@ export type TaskStatus =
   | "planned"
   | "queued"
   | "assigned"
+  | "accepted"
+  | "planning"
   | "in_progress"
+  | "waiting_tool"
+  | "waiting_dependency"
   | "self_check"
   | "supervisor_review"
   | "qc"
@@ -69,7 +82,10 @@ export type TaskStatus =
   | "failed"
   | "blocked"
   | "cancelled"
-  | "awaiting_approval";
+  | "awaiting_approval"
+  | "escalated"
+  | "correction"
+  | "retest";
 
 export type QueueName =
   | "ceo"
@@ -84,8 +100,10 @@ export type QueueName =
 export type EventType =
   | "TASK_CREATED"
   | "TASK_ASSIGNED"
+  | "TASK_STARTED"
   | "TASK_COMPLETED"
   | "TASK_FAILED"
+  | "QC_STARTED"
   | "QC_FAILED"
   | "QC_PASSED"
   | "TEST_FAILED"
@@ -96,11 +114,16 @@ export type EventType =
   | "WORKER_DEMOTED"
   | "WORKER_REASSIGNED"
   | "WORKER_DISABLED"
+  | "WORKER_DEGRADED"
   | "MODEL_FAILED"
+  | "MODEL_SWITCHED"
   | "FALLBACK_TRIGGERED"
+  | "PROVIDER_DOWN"
+  | "PROVIDER_RECOVERED"
   | "SKILL_CREATED"
   | "SKILL_DEPLOYED"
   | "SKILL_ROLLED_BACK"
+  | "SKILL_VERIFIED"
   | "DEPLOYMENT_ROLLED_BACK"
   | "APPROVAL_REQUIRED"
   | "APPROVAL_GRANTED"
@@ -124,7 +147,11 @@ export type EventType =
   | "ESCALATION"
   | "DISAGREEMENT"
   | "ARBITRATION"
-  | "HEARTBEAT";
+  | "HEARTBEAT"
+  | "SECURITY_ALERT"
+  | "SYSTEM_DEGRADED"
+  | "ISOLATE"
+  | "LIVE_TURN";
 
 export type MemoryLayer =
   | "org"
@@ -132,7 +159,30 @@ export type MemoryLayer =
   | "team"
   | "worker"
   | "task"
-  | "project";
+  | "project"
+  | "skill"
+  | "knowledge"
+  | "audit";
+
+export type BrainProvider =
+  | "xai"
+  | "openai"
+  | "anthropic"
+  | "google"
+  | "openrouter"
+  | "omniroute"
+  | "ollama"
+  | "local"
+  | "open"
+  | "cloud";
+
+export type CostClass = "free" | "paid" | "local" | "self-hosted" | "limited" | "unknown";
+
+export type BrainHealth = "up" | "down" | "degraded" | "circuit-open";
+
+export type ExecutionSource = "pending" | "local" | "live" | "fallback";
+
+export type PriorityBand = "critical" | "high" | "normal" | "low" | "background";
 
 export interface PerformanceProfile {
   done: number;
@@ -147,6 +197,29 @@ export interface PerformanceProfile {
   repeats: number;
   toolAccuracy: number;
   compliance: number;
+  hallucinationFlags: number;
+  cost: number;
+}
+
+export interface WorkerAgent {
+  registryId: string;
+  specialization: string;
+  methodology: string[];
+  style: ReasoningStyle;
+  verbosity: "terse" | "standard" | "thorough";
+  riskTolerance: "conservative" | "balanced" | "exploratory";
+  policyVersion: string;
+  brainPreference: string[];
+  qualityThreshold: number;
+  health: WorkerHealth;
+  workload: number;
+  heartbeatAt: number;
+  lessons: string[];
+  mistakes: string[];
+  achievements: string[];
+  unknowns: number;
+  escalations: number;
+  lastTrace: string;
 }
 
 export interface Worker {
@@ -172,6 +245,7 @@ export interface Worker {
   reserved: boolean;
   disabledReason: string | null;
   lastActiveAt: number;
+  agent: WorkerAgent;
 }
 
 export interface Department {
@@ -197,7 +271,7 @@ export interface Team {
 export interface Brain {
   id: string;
   name: string;
-  provider: "xai" | "local" | "open" | "cloud";
+  provider: BrainProvider;
   tier: "flagship" | "fast" | "free" | "local";
   capabilities: string[];
   available: boolean;
@@ -208,6 +282,13 @@ export interface Brain {
   tokensUsed: number;
   tasks: number;
   specialty: string;
+  costClass: CostClass;
+  privacy: "any" | "private" | "local";
+  fallbackRank: number;
+  health: BrainHealth;
+  lastError: string | null;
+  consecutiveFails: number;
+  contextWindow: number;
 }
 
 export interface SkillTest {
@@ -232,6 +313,8 @@ export interface Skill {
   rollbackVersion: string | null;
   changeHistory: { at: number; by: string; note: string }[];
   successRate: number;
+  inputs: string[];
+  outputs: string[];
 }
 
 export interface MemoryItem {
@@ -279,7 +362,7 @@ export interface Task {
   failures: { at: number; reason: string; by: string }[];
   corrections: number;
   tests: { name: string; result: "pass" | "fail" | "pending" }[];
-  qcVerdict: "pass" | "fail" | "pending" | null;
+  qcVerdict: "pass" | "fail" | "pending" | "pass_with_warnings" | "requires_human" | null;
   qcNotes: string;
   approval: "not_required" | "pending" | "granted" | "rejected";
   lessons: string[];
@@ -290,6 +373,12 @@ export interface Task {
   tokenUsed: number;
   gate: number;
   claim: ClaimKind;
+  executionSource: ExecutionSource;
+  livePending: boolean;
+  trace: string[];
+  checkpoint: { step: string; at: number; note: string } | null;
+  priorityBand: PriorityBand;
+  unknowns: string[];
 }
 
 export interface Project {
@@ -354,13 +443,13 @@ export interface OrgMessage {
 
 export interface Approval {
   id: string;
-  at: number;
   kind: "objective" | "skill" | "improvement" | "high_risk" | "disable" | "rollback";
   title: string;
   detail: string;
   risk: RiskLevel;
   refId: string;
   status: "pending" | "granted" | "rejected";
+  at: number;
 }
 
 export interface Improvement {
@@ -403,6 +492,9 @@ export interface Kpis {
   availableWorkers: number;
   trainingWorkers: number;
   fallbacks: number;
+  liveTurns: number;
+  localTurns: number;
+  unknowns: number;
 }
 
 export interface ScenarioResult {
@@ -443,8 +535,16 @@ export interface OrgIdentity {
   foundedAt: number;
 }
 
+export interface RuntimeFlags {
+  liveMode: boolean;
+  liveInflight: number;
+  liveCap: number;
+  mode: "development" | "test" | "staging" | "production";
+  isolated: { kind: "worker" | "department" | "team" | "task" | "tool" | "skill" | "provider"; id: string }[];
+}
+
 export interface OrgSnapshot {
-  version: 1;
+  version: 2;
   identity: OrgIdentity;
   orgStatus: OrgStatus;
   workers: Record<string, Worker>;
@@ -474,6 +574,7 @@ export interface OrgSnapshot {
     apiCalls: number;
     apiCap: number;
   };
+  runtime: RuntimeFlags;
   tickMs: number;
   epoch: number;
   lastTickAt: number;

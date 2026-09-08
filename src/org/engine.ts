@@ -1,3 +1,5 @@
+import { applyTurnToTask, executeLocalQc, executeLocalWorker } from "@/runtime/worker/kernel";
+import { ensureAgent } from "@/runtime/worker/profile";
 import { clamp, mulberry32, padId } from "@/lib/utils";
 import { HIGH_RISK_TERMS, MEDIUM_RISK_TERMS } from "./catalog";
 import { QUALITY_GATES } from "./constitution";
@@ -27,6 +29,22 @@ function nid(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${seq}`;
 }
 
+function taskRuntimeFields(state: OrgSnapshot, priority: number): Pick<
+  Task,
+  "executionSource" | "livePending" | "trace" | "checkpoint" | "priorityBand" | "unknowns"
+> {
+  const band: Task["priorityBand"] =
+    priority >= 5 ? "critical" : priority === 4 ? "high" : priority <= 1 ? "background" : "normal";
+  return {
+    executionSource: "pending",
+    livePending: false,
+    trace: ["created"],
+    checkpoint: { step: "created", at: Date.now(), note: "queued" },
+    priorityBand: band,
+    unknowns: [],
+  };
+}
+
 function pushCap<T>(arr: T[], item: T, max: number) {
   arr.push(item);
   if (arr.length > max) arr.splice(0, arr.length - max);
@@ -34,6 +52,8 @@ function pushCap<T>(arr: T[], item: T, max: number) {
 
 export function classifyRisk(text: string): RiskLevel {
   const t = text.toLowerCase();
+  if (/\b(critical|destroy|wipe|exfiltrat|credential dump)\b/.test(t) && HIGH_RISK_TERMS.some((k) => t.includes(k)))
+    return "critical";
   if (HIGH_RISK_TERMS.some((k) => t.includes(k))) return "high";
   if (MEDIUM_RISK_TERMS.some((k) => t.includes(k))) return "medium";
   return "low";
@@ -207,7 +227,7 @@ export function applyPlan(state: OrgSnapshot, objectiveId: string, plan: PlanInp
   const cap = neededCapability(obj.text);
   const deptIds = plan.departments?.length ? plan.departments : deptsFor(obj.text, cap);
   obj.strategy = plan.strategy ?? localStrategy(obj.text, deptIds);
-  obj.status = risk === "high" ? "awaiting_approval" : "active";
+  obj.status = risk === "high" || risk === "critical" ? "awaiting_approval" : "active";
   state.ceo.status = "directing";
   state.ceo.lastBrief = obj.strategy;
 
@@ -217,7 +237,7 @@ export function applyPlan(state: OrgSnapshot, objectiveId: string, plan: PlanInp
     name: obj.text.slice(0, 72),
     summary: obj.strategy.slice(0, 220),
     departmentIds: deptIds,
-    status: risk === "high" ? "awaiting_approval" : "active",
+    status: risk === "high" || risk === "critical" ? "awaiting_approval" : "active",
     risk,
     progress: 0,
     createdAt: Date.now(),
@@ -258,7 +278,7 @@ export function applyPlan(state: OrgSnapshot, objectiveId: string, plan: PlanInp
       qcId: null,
       testerId: null,
       owner: "supervisor",
-      status: risk === "high" ? "awaiting_approval" : "queued",
+      status: risk === "high" || risk === "critical" ? "awaiting_approval" : "queued",
       priority: obj.priority,
       urgency: 3,
       importance: 4,
@@ -281,7 +301,7 @@ export function applyPlan(state: OrgSnapshot, objectiveId: string, plan: PlanInp
       ],
       qcVerdict: null,
       qcNotes: "",
-      approval: risk === "high" ? "pending" : "not_required",
+      approval: risk === "high" || risk === "critical" ? "pending" : "not_required",
       lessons: [],
       locked: false,
       createdAt: Date.now(),
@@ -290,6 +310,7 @@ export function applyPlan(state: OrgSnapshot, objectiveId: string, plan: PlanInp
       tokenUsed: 0,
       gate: 0,
       claim: "unverified_claim",
+      ...taskRuntimeFields(state, obj.priority),
     };
     created.push(task);
     state.tasks[task.id] = task;
@@ -300,7 +321,7 @@ export function applyPlan(state: OrgSnapshot, objectiveId: string, plan: PlanInp
     });
   });
 
-  if (risk === "high") {
+  if (risk === "high" || risk === "critical") {
     const appr: Approval = {
       id: nid("apr"),
       at: Date.now(),
@@ -390,6 +411,8 @@ export function startSkillFactory(
     rollbackVersion: null,
     changeHistory: [{ at: Date.now(), by: creator, note: "Skill factory opened" }],
     successRate: 0,
+    inputs: ["capability-gap", "spec"],
+    outputs: ["skill-module", "tests"],
   };
   state.skills.unshift(skill);
   emit(state, "SKILL_CREATED", creator, skill.name, "Capability gap detected", {
@@ -441,6 +464,7 @@ export function startSkillFactory(
     tokenUsed: 0,
     gate: 0,
     claim: "unverified_claim",
+    ...taskRuntimeFields(state, 5),
   };
   state.tasks[task.id] = task;
   state.taskOrder.unshift(task.id);
@@ -456,7 +480,7 @@ export function issueObjective(state: OrgSnapshot, text: string, priority = 3): 
     status: "strategy" as const,
     strategy: "",
     createdAt: Date.now(),
-    requiresApproval: risk === "high",
+    requiresApproval: risk === "high" || risk === "critical",
   };
   state.objectives.unshift(obj);
   state.ceo.status = "planning";
@@ -524,6 +548,7 @@ function assignTask(state: OrgSnapshot, task: Task) {
   }
   const worker = eligibleWorker(state, task);
   if (!worker) return;
+  ensureAgent(worker);
   const existing = Object.values(state.tasks).find(
     (t) => t.locked && t.workerId === worker.id && t.status !== "delivered" && t.status !== "cancelled",
   );
@@ -543,6 +568,11 @@ function assignTask(state: OrgSnapshot, task: Task) {
     state.kpis.fallbacks += 1;
   }
   task.brainId = brain.id;
+  task.livePending = Boolean(
+    state.runtime?.liveMode &&
+      state.kpis.liveTurns < (state.runtime.liveCap ?? 4) &&
+      state.budgets.apiCalls < state.budgets.apiCap,
+  );
   emit(state, "TASK_ASSIGNED", worker.id, task.title, "Supervisor assignment", {
     taskId: task.id,
     modelId: brain.id,
@@ -550,61 +580,26 @@ function assignTask(state: OrgSnapshot, task: Task) {
   message(state, task.supervisorId ?? "ORG-CEO", worker.id, "request", task.description, task.id);
 }
 
-function produceOutput(state: OrgSnapshot, task: Task, worker: Worker, rand: () => number) {
-  const skill = state.skills.find((s) => s.id === task.skillId);
-  const mem = retrieveMemory(state, task.requiredCapability, 2);
-  const quality = worker.performance.quality;
-  const forceBad =
-    state.faults.badOutput ||
-    task.title.toLowerCase().includes("as if rule 4") ||
-    quality < 0.62 && rand() < 0.7;
-  const forceFailWorker = state.faults.workerFailureId === worker.id;
-
-  if (forceFailWorker || (state.faults.toolFailure && rand() < 0.5)) {
+function produceOutput(state: OrgSnapshot, task: Task, worker: Worker, _rand: () => number) {
+  const turn = executeLocalWorker(state, worker, task);
+  if (!turn.ok) {
     task.output = "";
-    task.failures.push({ at: Date.now(), reason: "Worker/tool failure during execution", by: worker.id });
+    task.failures.push({
+      at: Date.now(),
+      reason: turn.unknowns[0] ?? "Worker/tool failure during execution",
+      by: worker.id,
+    });
     task.status = "failed";
     task.claim = "error";
+    task.trace = turn.trace;
+    task.executionSource = turn.source;
     return false;
   }
-
-  const verifiedBits = mem
-    .filter((m) => m.status === "verified")
-    .map((m) => m.title)
-    .join("; ");
-
-  if (forceBad) {
-    task.output = `DRAFT (unverified): ${task.title}. This output skips independent verification and treats assumptions as facts. Related: ${verifiedBits || "none"}.`;
-    task.claim = "unverified_claim";
-    task.evidence = ["author-self-report"];
-    return true;
-  }
-
-  task.output = [
-    `RESULT: ${task.title}`,
-    `METHOD: ${skill?.name ?? task.requiredCapability} v${skill?.version ?? "n/a"}`,
-    `BRAIN: ${task.brainId}`,
-    `CLAIM STATUS: verified_fact (pending independent QC)`,
-    verifiedBits ? `USED MEMORY: ${verifiedBits}` : "USED MEMORY: none (no prior verified lesson)",
-    `EVIDENCE: requirement-trace, self-check, skill-benchmark ${skill?.benchmark.score ?? 0}`,
-    `NOTES: Worker ${worker.id} executed under supervisor ${task.supervisorId}. Context firewall applied.`,
-  ].join("\n");
-  task.claim = "unverified_claim";
-  task.evidence = ["requirement-trace", "self-check"];
-  const tokens = 80 + Math.floor(rand() * 220);
-  task.tokenUsed += tokens;
-  state.budgets.tokens += tokens;
-  const brain = state.brains.find((b) => b.id === task.brainId);
-  if (brain) {
-    brain.tokensUsed += tokens;
-    brain.tasks += 1;
-  }
-  worker.performance.tokens += tokens;
+  applyTurnToTask(state, task, worker, turn);
   return true;
 }
 
-function independentQc(state: OrgSnapshot, task: Task, qc: Worker, rand: () => number) {
-  const author = task.workerId ? state.workers[task.workerId] : null;
+function independentQc(state: OrgSnapshot, task: Task, qc: Worker, _rand: () => number) {
   const authorBrain = task.brainId;
   const qcBrain = selectBrain(state, "qc", 0.8);
   if (qcBrain.id === authorBrain && qcBrain.id !== "local-heuristic") {
@@ -613,22 +608,14 @@ function independentQc(state: OrgSnapshot, task: Task, qc: Worker, rand: () => n
   } else {
     qc.modelId = qcBrain.id;
   }
-
-  const looksBad =
-    /skips independent verification|as if rule 4|treats assumptions as facts/i.test(task.output) ||
-    task.claim === "error" ||
-    !task.output ||
-    (author && author.performance.quality < 0.62 && rand() < 0.65);
-
-  if (looksBad) {
-    task.qcVerdict = "fail";
-    task.qcNotes = `Independent QC (${qc.id}, brain ${qc.modelId}) rejected author brain ${authorBrain}. Missing verification or requirement drift.`;
+  const turn = executeLocalQc(state, qc, task);
+  task.qcVerdict = turn.qcPass ? "pass" : "fail";
+  task.qcNotes = turn.qcNotes ?? turn.output;
+  if (!turn.qcPass) {
     task.claim = "error";
     task.gate = 3;
     return false;
   }
-  task.qcVerdict = "pass";
-  task.qcNotes = `Independent QC (${qc.id}) confirmed requirement trace. Author brain ${authorBrain} was not the judge.`;
   task.gate = 4;
   task.claim = "fact";
   return true;
@@ -940,6 +927,12 @@ function recompute(state: OrgSnapshot) {
 
 export function tick(state: OrgSnapshot, steps = 1) {
   if (state.orgStatus !== "running") return;
+  if (!state.runtime) {
+    state.runtime = { liveMode: false, liveInflight: 0, liveCap: 4, mode: "production", isolated: [] };
+  }
+  state.kpis.liveTurns ??= 0;
+  state.kpis.localTurns ??= 0;
+  state.kpis.unknowns ??= 0;
   const rand = mulberry32(state.epoch * 997 + 13);
   applyFaults(state);
 
@@ -990,6 +983,11 @@ export function tick(state: OrgSnapshot, steps = 1) {
     }
 
     if (t.status === "in_progress" && worker) {
+      if (t.livePending) {
+        t.checkpoint = { step: "in_progress", at: Date.now(), note: "awaiting live brain" };
+        processed++;
+        continue;
+      }
       t.progress = clamp(t.progress + 0.28 + rand() * 0.25, 0, 1);
       processed++;
       if (t.progress < 1 && !state.faults.timeout) continue;
@@ -1091,7 +1089,7 @@ export function tick(state: OrgSnapshot, steps = 1) {
       emit(state, "TEST_PASSED", tester?.id ?? "QLY", t.title, "Verification suite passed", {
         taskId: t.id,
       });
-      t.status = t.risk === "high" || t.requiredCapability === "security-review" ? "security_review" : "verification";
+      t.status = t.risk === "high" || t.risk === "critical" || t.requiredCapability === "security-review" ? "security_review" : "verification";
       t.gate = 5;
       continue;
     }
@@ -1240,12 +1238,43 @@ export function setBrainAvailable(state: OrgSnapshot, brainId: string, available
   const b = state.brains.find((x) => x.id === brainId);
   if (!b) return;
   b.available = available;
+  b.health = available ? "up" : "down";
   if (!available) {
     emit(state, "MODEL_FAILED", "OWNER", `${b.name} disabled by Owner`, "Owner control", { modelId: brainId });
     emit(state, "FALLBACK_TRIGGERED", "RTG", "Rerouting away from disabled brain", "Owner control", {
       modelId: "local-heuristic",
     });
+    emit(state, "PROVIDER_DOWN", "RTG", `${b.provider} marked unavailable`, "Owner control", { modelId: brainId });
+  } else {
+    emit(state, "PROVIDER_RECOVERED", "RTG", `${b.name} restored`, "Owner control", { modelId: brainId });
   }
+}
+
+export function isolate(
+  state: OrgSnapshot,
+  kind: "worker" | "department" | "team" | "task" | "tool" | "skill" | "provider",
+  id: string,
+) {
+  if (!state.runtime) return;
+  state.runtime.isolated = [...(state.runtime.isolated ?? []), { kind, id }];
+  if (kind === "worker") disableWorker(state, id, "Isolated by Owner");
+  if (kind === "department") {
+    for (const t of Object.values(state.tasks)) {
+      if (t.departmentId === id && !["delivered", "cancelled"].includes(t.status)) t.status = "blocked";
+    }
+  }
+  if (kind === "task") {
+    const t = state.tasks[id];
+    if (t) t.status = "cancelled";
+  }
+  if (kind === "provider") setBrainAvailable(state, id, false);
+  if (kind === "skill") disableSkill(state, id);
+  emit(state, "ISOLATE", "OWNER", `${kind} ${id} isolated`, "Emergency control");
+}
+
+export function setLiveMode(state: OrgSnapshot, on: boolean) {
+  if (!state.runtime) return;
+  state.runtime.liveMode = on;
 }
 
 export const GATE_LABELS = QUALITY_GATES;

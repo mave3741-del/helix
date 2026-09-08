@@ -11,6 +11,9 @@ const TONE = {
   rejected: "danger",
   superseded: "neutral",
   under_review: "live",
+  proposed: "warn",
+  testing: "live",
+  deprecated: "neutral",
 } as const;
 
 export function MemoryView() {

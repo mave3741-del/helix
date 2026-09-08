@@ -97,7 +97,16 @@ export function WorkView() {
             <p className="mt-3 text-xs text-muted">
               Brain {task.brainId}
               {task.fallbacks.length ? ` → ${task.fallbacks.join(" → ")}` : ""} · claim {task.claim}
+              {task.executionSource ? ` · source ${task.executionSource}` : ""}
+              {task.livePending ? " · awaiting live brain" : ""}
             </p>
+            {task.trace?.length ? (
+              <ul className="mt-3 space-y-1 font-mono text-[10px] text-muted">
+                {task.trace.slice(-8).map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
+              </ul>
+            ) : null}
             {task.qcNotes ? <p className="mt-2 text-xs text-warn">{task.qcNotes}</p> : null}
           </Panel>
         ) : null}

@@ -99,4 +99,18 @@ export const SCENARIO_DEFS = [
     spec: "Artificial failures are introduced. Fallback and recovery respond.",
     objective: null,
   },
+  {
+    id: "t15",
+    n: 15,
+    name: "Exactly 1,000 identities",
+    spec: "COUNT(worker_registry) === 1000. No duplicates. No ID reuse.",
+    objective: null,
+  },
+  {
+    id: "t16",
+    n: 16,
+    name: "Context firewall",
+    spec: "A worker cannot read another worker's private memory.",
+    objective: null,
+  },
 ] as const;

@@ -27,6 +27,7 @@ export function CommandView() {
   const projectsAll = useOrgStore((s) => s.projects);
   const planning = useOrgStore((s) => s.planning);
   const planError = useOrgStore((s) => s.planError);
+  const runtime = useOrgStore((s) => s.runtime);
   const [text, setText] = useState("");
   void epoch;
   const approvals = approvalsAll.filter((a) => a.status === "pending");
@@ -59,6 +60,10 @@ export function CommandView() {
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
           {identity.mission}
         </p>
+        <p className="mt-2 font-mono text-[11px] tracking-[0.14em] text-live uppercase">
+          Runtime {runtime?.mode ?? "production"} · live brains {runtime?.liveMode ? "on" : "off"} · cap{" "}
+          {runtime?.liveCap ?? 4} cloud turns / objective burst
+        </p>
       </div>
 
       <Panel className="rounded-2xl p-4 sm:p-6">
@@ -76,6 +81,12 @@ export function CommandView() {
           <Button onClick={() => void submit(text)} disabled={planning || !text.trim()}>
             {planning ? <Loader2 className="animate-spin" /> : <ArrowUpRight />}
             Dispatch
+          </Button>
+          <Button
+            variant={runtime?.liveMode ? "default" : "secondary"}
+            onClick={() => useOrgStore.getState().setLive(!runtime?.liveMode)}
+          >
+            {runtime?.liveMode ? "Live brains" : "Local only"}
           </Button>
           <span className="text-xs text-muted">⌘↵ to send · risk-classified automatically</span>
         </div>
