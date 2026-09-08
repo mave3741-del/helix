@@ -11,7 +11,7 @@ Helix is an organizational operating system — not a chatbot and not a bag of i
 | **Full zip** (report + source code) | [helix-source-and-report.zip](./helix-source-and-report.zip) |
 | **Project report** (Markdown) | [REPORT.md](./REPORT.md) |
 | **Project report** (HTML, print-ready) | [REPORT.html](./REPORT.html) |
-| **GitHub Release v1.0.0** | [Releases](https://github.com/mave3741-del/helix/releases/tag/v1.0.0) |
+| **GitHub Release v1.1.0** | [Releases](https://github.com/mave3741-del/helix/releases/tag/v1.1.0) |
 
 Repo: [github.com/mave3741-del/helix](https://github.com/mave3741-del/helix)
 
@@ -21,9 +21,10 @@ Repo: [github.com/mave3741-del/helix](https://github.com/mave3741-del/helix)
 - **CEO** plans, delegates, and reports
 - **8 executives / 12 departments / supervisors / 1,000 workers**
 - Independent **QC / testing / security** gates
+- Real **worker runtime** with live Grok 4.5 (capped) and local heuristic fallback
 - **OmniRoute** model routing with automatic fallback
 - Organizational **memory**, **skill factory**, **governance**, **recovery**
-- 14 built-in **acceptance scenarios**
+- 16 built-in **acceptance scenarios**
 
 ## Brains
 
@@ -44,7 +45,7 @@ npm install
 npm run dev
 ```
 
-Open the app, dispatch an objective from Command, or run the fourteen scenarios from Prove.
+Open the app, dispatch an objective from Command, or run the sixteen scenarios from Prove.
 
 ## Stack
 
