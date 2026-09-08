@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Helix — AI Organization OS · Project Report</title>
+  <style>
+    :root {
+      --bg: #08080a;
+      --fg: #e8e8ec;
+      --muted: #8b8b96;
+      --line: #2a2a30;
+      --card: #121216;
+      --accent: #c9d0d8;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); }
+    body {
+      font: 15px/1.55 "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 48px 28px 80px;
+    }
+    header {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 28px;
+      margin-bottom: 36px;
+    }
+    .kicker {
+      font: 11px/1 ui-monospace, "SF Mono", Menlo, monospace;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    h1 { font-weight: 500; font-size: 34px; letter-spacing: -0.03em; margin: 10px 0 8px; }
+    h2 { font-weight: 500; font-size: 20px; letter-spacing: -0.02em; margin: 36px 0 12px; }
+    h3 { font-weight: 500; font-size: 15px; margin: 22px 0 8px; }
+    p, li { color: #d2d2d8; }
+    .meta { color: var(--muted); font-size: 13px; }
+    .meta a { color: var(--accent); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0 20px; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 500; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+    pre, code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+    pre {
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 14px 16px;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .box {
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 16px 18px;
+      margin: 16px 0 24px;
+      font-size: 14px;
+    }
+    a { color: var(--accent); }
+    footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+    @media print {
+      body { background: #fff; color: #111; max-width: none; padding: 16px 24px; }
+      p, li { color: #222; }
+      .kicker, .meta, th, footer { color: #555; }
+      pre, .box { background: #f4f4f6; border-color: #ddd; color: #111; }
+      header, h2 { border-color: #ddd; }
+      a { color: #111; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="kicker">Project report · v1.0.0 · 8 September 2026</p>
+    <h1>Helix — AI Organization OS</h1>
+    <p class="meta">1 Owner · 1 CEO · 1,000 persistent workers · private repo
+      <a href="https://github.com/mave3741-del/helix">github.com/mave3741-del/helix</a>
+    </p>
+  </header>
+
+  <h2>1. Executive summary</h2>
+  <p>Helix is a production-grade <strong>organizational operating system</strong>, not a chatbot and not a collection of independent agents. One human Owner directs one CEO. The CEO runs executive management, twelve departments, supervisors, and <strong>exactly 1,000 persistent AI workers</strong>, with independent QC, testing, security, skill creation, organizational memory, model routing, fallback, governance, audit, and recovery.</p>
+  <div class="box"><strong>Central principle.</strong> The organization is the intelligence. Models are replaceable brains. Helix stays operational if a worker, model, provider, skill, or workflow fails.</div>
+
+  <h2>2. What Helix is (and is not)</h2>
+  <table>
+    <thead><tr><th>Helix is</th><th>Helix is not</th></tr></thead>
+    <tbody>
+      <tr><td>An Owner dashboard plus an autonomous operating layer</td><td>A chat UI wrapping one model</td></tr>
+      <tr><td>Persistent worker identities with history</td><td>1,000 simultaneous LLM processes</td></tr>
+      <tr><td>Hierarchical coordination</td><td>A swarm of peer agents</td></tr>
+      <tr><td>Independent QC / testing / security</td><td>A worker judging its own output</td></tr>
+      <tr><td>Memory owned by the organization</td><td>Session context that dies with a model</td></tr>
+    </tbody>
+  </table>
+  <p>The Owner talks to the organization. The Owner is not required to manage individual workers.</p>
+
+  <h2>3. Architecture</h2>
+  <pre>OWNER (human)
+  └── CEO  (Helix CEO, Grok 4.5 strategy brain)
+        ├── 8 executives
+        ├── 12 department managers
+        ├── supervisors / 48 teams
+        ├── 1,000 persistent workers (W-0001 … W-1000)
+        ├── QC / testers / security / recovery
+        └── OmniRoute  →  brains + fallback chain</pre>
+  <h3>Core loop</h3>
+  <ol>
+    <li>Owner issues an objective (or a scenario injects one).</li>
+    <li>Risk is classified: low / medium / high. High-risk work stops for Owner approval.</li>
+    <li>CEO sets strategy and selects departments.</li>
+    <li>Managers / supervisors assemble teams from the 1,000-worker registry.</li>
+    <li>Workers execute. Supervisors review. Independent QC checks. Testing validates.</li>
+    <li>Failures enter diagnosis → correction → retest.</li>
+    <li>Verified lessons become memory. Skills go sandbox → test → approve → deploy.</li>
+    <li>A 420ms tick advances queues, tasks, QC, training, fallback, succession, and KPIs.</li>
+  </ol>
+  <p>Worker identity, worker state, worker process, model session, and task execution are separate. All 1,000 identities persist in IndexedDB. Restart restores the last checkpoint.</p>
+
+  <h2>4. Organization design</h2>
+  <h3>Hierarchy</h3>
+  <table>
+    <thead><tr><th>Layer</th><th>Responsibility</th></tr></thead>
+    <tbody>
+      <tr><td>Owner</td><td>Mission, objectives, policy, high-impact approval</td></tr>
+      <tr><td>CEO</td><td>Runs the organization, plans, reports</td></tr>
+      <tr><td>Executives (8)</td><td>Cross-department authority</td></tr>
+      <tr><td>Department managers (12)</td><td>Run a department</td></tr>
+      <tr><td>Supervisors</td><td>Run teams, review work, rebalance</td></tr>
+      <tr><td>Workers</td><td>Execute</td></tr>
+      <tr><td>QC / testers / security</td><td>Independently verify</td></tr>
+    </tbody>
+  </table>
+  <h3>Departments</h3>
+  <table>
+    <thead><tr><th>Code</th><th>Department</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>STR</td><td>Strategy</td><td>Objectives, planning, Owner alignment</td></tr>
+      <tr><td>ENG</td><td>Engineering</td><td>Build, integrate, ship</td></tr>
+      <tr><td>RSH</td><td>Research</td><td>Investigate, synthesize, evidence</td></tr>
+      <tr><td>QLY</td><td>Quality</td><td>Independent QC, testing, standards</td></tr>
+      <tr><td>SEC</td><td>Security</td><td>Permissions, red team, review</td></tr>
+      <tr><td>OPS</td><td>Operations</td><td>Queues, runtime, delivery</td></tr>
+      <tr><td>KNO</td><td>Knowledge</td><td>Organizational memory and retrieval</td></tr>
+      <tr><td>SKL</td><td>Skills Factory</td><td>Create, test, version skills</td></tr>
+      <tr><td>WRK</td><td>Workforce</td><td>Assignment, training, performance</td></tr>
+      <tr><td>GOV</td><td>Governance</td><td>Constitution, risk, approvals</td></tr>
+      <tr><td>RCV</td><td>Recovery</td><td>Fault handling and succession</td></tr>
+      <tr><td>RTG</td><td>Brain Routing</td><td>Model selection, fallback, benchmarks</td></tr>
+    </tbody>
+  </table>
+  <p>Every worker has a unique ID (W-0001–W-1000), role, department, supervisor, capabilities, permissions, status, assignment, performance / QC / training / task history, model assignment, and memory scope. Supervisors that fail are succeeded automatically.</p>
+
+  <h2>5. Quality, learning, and skills</h2>
+  <p>Quality gates: requirement verification → worker self-check → supervisor review → independent QC (different brain from the author) → testing → security / risk review → final verification → delivery.</p>
+  <p>Memory layers: organization, department, team, worker, task, project. Claim status: verified, unverified, rejected, superseded, under review. Rejected information does not become trusted knowledge.</p>
+  <p>Skills are created when a capability is missing: sandbox → test → security → QC → approve → deploy, with version and rollback. Untested skills stay in sandbox.</p>
+
+  <h2>6. Brains (models)</h2>
+  <p>All five brains start <strong>available</strong>.</p>
+  <table>
+    <thead><tr><th>Brain</th><th>Provider</th><th>Specialty</th></tr></thead>
+    <tbody>
+      <tr><td>Grok 4.5</td><td>xAI flagship</td><td>Complex reasoning and CEO strategy</td></tr>
+      <tr><td>Grok Fast</td><td>xAI fast</td><td>Low-latency structured work</td></tr>
+      <tr><td>Cloud Coder</td><td>Cloud</td><td>Implementation and tests</td></tr>
+      <tr><td>Open Reasoner</td><td>Open / free</td><td>Research and drafting</td></tr>
+      <tr><td>Local Heuristic</td><td>Local</td><td>Deterministic always-on fallback</td></tr>
+    </tbody>
+  </table>
+  <p>Fallback chain: Grok 4.5 → Grok Fast → Cloud Coder → Open Reasoner → Local Heuristic. Switching brains does not reset the task. Brain failure is not organizational failure.</p>
+
+  <h2>7. Governance</h2>
+  <p>Fifteen constitution rules cover Owner authority, verified results, no unverified facts, correction cycles, replaceable brains, model-independent memory, tested skills, auditability, high-impact approval, controlled self-improvement, security boundaries, task continuity, and evidence over claims. High-risk work requires Owner approval. Emergency halt pauses the organization. Recovery restores from checkpoint.</p>
+
+  <h2>8. Owner interface</h2>
+  <p>Command, Organization, Workforce, Work, Quality, Brains, Skills, Memory, Governance, Improve, Prove. Desktop rail plus mobile bottom navigation. Pause, resume, recover, and emergency halt are Owner controls.</p>
+
+  <h2>9. Acceptance tests (Prove)</h2>
+  <table>
+    <thead><tr><th>#</th><th>Scenario</th><th>Expected behaviour</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Simple task</td><td>Objective delegated and completed</td></tr>
+      <tr><td>2</td><td>Complex task</td><td>Departments and teams form automatically</td></tr>
+      <tr><td>3</td><td>Missing skill</td><td>Skill created, tested, deployed</td></tr>
+      <tr><td>4</td><td>Bad worker</td><td>QC → diagnosis → training → retest</td></tr>
+      <tr><td>5</td><td>Model failure</td><td>Fallback continues the task</td></tr>
+      <tr><td>6</td><td>Supervisor failure</td><td>Successor; work continues</td></tr>
+      <tr><td>7</td><td>Bad output</td><td>Independent QC catches it</td></tr>
+      <tr><td>8</td><td>Cross-department</td><td>Coordination via dependencies</td></tr>
+      <tr><td>9</td><td>Organizational learning</td><td>Verified method becomes knowledge</td></tr>
+      <tr><td>10</td><td>Restart</td><td>State restores; work continues</td></tr>
+      <tr><td>11</td><td>Self-improvement</td><td>Change gated before deploy</td></tr>
+      <tr><td>12</td><td>High-risk action</td><td>Stops for Owner approval</td></tr>
+      <tr><td>13</td><td>Low-risk action</td><td>Completes autonomously</td></tr>
+      <tr><td>14</td><td>Fault injection</td><td>Fallback and recovery respond</td></tr>
+    </tbody>
+  </table>
+
+  <h2>10. Source map</h2>
+  <table>
+    <thead><tr><th>Path</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>REPORT.md</code> / <code>REPORT.html</code></td><td>This report</td></tr>
+      <tr><td><code>src/org/engine.ts</code></td><td>Tick, assignment, QC, fallback, succession</td></tr>
+      <tr><td><code>src/org/seed.ts</code></td><td>Deterministic 1,000-worker generator</td></tr>
+      <tr><td><code>src/org/catalog.ts</code></td><td>Departments, brains, skills</td></tr>
+      <tr><td><code>src/org/constitution.ts</code></td><td>Rules, systems, quality gates</td></tr>
+      <tr><td><code>src/org/scenarios.ts</code></td><td>Fourteen acceptance tests</td></tr>
+      <tr><td><code>src/store/org-store.ts</code></td><td>Zustand store + IndexedDB persist</td></tr>
+      <tr><td><code>src/components/views/</code></td><td>Owner views</td></tr>
+    </tbody>
+  </table>
+  <p>Stack: TanStack Start, React 19, Tailwind v4, Zustand, IndexedDB. Auth and database off.</p>
+
+  <h2>11. How to run</h2>
+  <pre>npm install
+npm run dev</pre>
+  <ol>
+    <li>Open Command and dispatch an objective.</li>
+    <li>Watch the department lattice, CEO brief, and events tape.</li>
+    <li>Try a high-risk sample — it should stop for approval.</li>
+    <li>Open Workforce and search the 1,000 identities.</li>
+    <li>Open Brains — all five models start available.</li>
+    <li>Open Prove and run all fourteen tests.</li>
+  </ol>
+
+  <h2>12. Delivery status</h2>
+  <p>Owner, CEO, executives, 12 departments, 1,000 workers, independent QC, OmniRoute with five brains, hierarchical memory, skill factory, constitution, risk gates, audit, halt, succession, 14 scenarios, and restart persistence are implemented. Source: <a href="https://github.com/mave3741-del/helix">github.com/mave3741-del/helix</a>.</p>
+
+  <footer>
+    Helix v1.0.0 · This zip contains the project report and full source (no node_modules).
+  </footer>
+</body>
+</html>
