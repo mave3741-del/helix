@@ -10,6 +10,7 @@ import {
   setBrainAvailable,
   setLiveMode,
   setOrgStatus,
+  setRoutingMode,
   tick,
 } from "@/org/engine";
 import { idbStorage } from "@/org/persist";
@@ -17,7 +18,7 @@ import { runScenario } from "@/org/run-scenario";
 import { seedOrganization } from "@/org/seed";
 import { migrateSnapshot } from "@/runtime/migrate";
 import { applyLiveText } from "@/runtime/worker/kernel";
-import type { FaultState, OrgSnapshot } from "@/org/types";
+import type { FaultState, OrgSnapshot, RoutingMode } from "@/org/types";
 
 export type ViewId =
   | "command"
@@ -30,7 +31,8 @@ export type ViewId =
   | "memory"
   | "governance"
   | "improve"
-  | "scenarios";
+  | "scenarios"
+  | "tools";
 
 type OrgStore = OrgSnapshot & {
   hydrated: boolean;
@@ -69,6 +71,8 @@ type OrgStore = OrgSnapshot & {
   setMission: (mission: string) => void;
   setOwnerName: (name: string) => void;
   setLive: (on: boolean) => void;
+  setRouting: (mode: RoutingMode) => void;
+  recordTool: (ok: boolean, evidence: string, output: string, taskId?: string) => void;
   isolate: (kind: "worker" | "department" | "team" | "task" | "tool" | "skill" | "provider", id: string) => void;
   beginLive: () => void;
   applyLive: (taskId: string, text: string, brainId: string, tokens: number) => void;
@@ -199,6 +203,23 @@ export const useOrgStore = create<OrgStore>()(
           setLiveMode(s, on);
           return { runtime: { ...s.runtime }, epoch: s.epoch + 1 };
         }),
+      setRouting: (mode) =>
+        set((s) => {
+          setRoutingMode(s, mode);
+          return { runtime: { ...s.runtime }, epoch: s.epoch + 1 };
+        }),
+      recordTool: (ok, evidence, output, taskId) =>
+        set((s) => {
+          s.runtime.toolRuns = (s.runtime.toolRuns ?? 0) + 1;
+          if (taskId && s.tasks[taskId]) {
+            const task = s.tasks[taskId];
+            task.evidence = [...task.evidence, evidence];
+            task.trace = [...(task.trace ?? []), `tool ${evidence}: ${output.slice(0, 160)}`].slice(-24);
+            task.checkpoint = { step: "tool", at: Date.now(), note: evidence };
+            if (ok && evidence === "code-run-pass") task.claim = "fact";
+          }
+          return { runtime: { ...s.runtime }, epoch: s.epoch + 1 };
+        }),
       isolate: (kind, id) =>
         set((s) => {
           isolate(s, kind, id);
@@ -270,6 +291,8 @@ export const useOrgStore = create<OrgStore>()(
           setMission: _sm,
           setOwnerName: _so,
           setLive: _sl,
+          setRouting: _sr,
+          recordTool: _rt,
           isolate: _iso,
           beginLive: _bl,
           applyLive: _al,

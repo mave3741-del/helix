@@ -30,6 +30,7 @@ export async function drainLiveQueue() {
         system: policy.system,
         user: policy.user,
         maxTokens: 450,
+        routingMode: s.runtime?.routingMode,
       },
     });
     if (res.ok) s.applyLive(task.id, res.text, res.brainId, res.tokens);

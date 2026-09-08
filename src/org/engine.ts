@@ -1,5 +1,7 @@
 import { applyTurnToTask, executeLocalQc, executeLocalWorker } from "@/runtime/worker/kernel";
 import { ensureAgent } from "@/runtime/worker/profile";
+import { routeBrain } from "@/runtime/brain/router";
+import { capabilityChain } from "@/runtime/brain/providers";
 import { clamp, mulberry32, padId } from "@/lib/utils";
 import { HIGH_RISK_TERMS, MEDIUM_RISK_TERMS } from "./catalog";
 import { QUALITY_GATES } from "./constitution";
@@ -112,33 +114,7 @@ function deptsFor(text: string, cap: string): string[] {
 }
 
 export function selectBrain(state: OrgSnapshot, required: string, qualityNeed: number): Brain {
-  const chain = preferredChain(required);
-  const available = chain
-    .map((id) => state.brains.find((b) => b.id === id))
-    .filter((b): b is Brain => !!b && b.available);
-
-  if (state.faults.modelFailure || state.faults.providerFailure || state.faults.rateLimit) {
-    const local = state.brains.find((b) => b.id === "local-heuristic" && b.available);
-    if (local) return local;
-  }
-  const scored = available
-    .filter((b) => b.accuracy >= qualityNeed * 0.8)
-    .sort((a, b) => {
-      const fitA = a.capabilities.includes(required) ? 1 : 0;
-      const fitB = b.capabilities.includes(required) ? 1 : 0;
-      if (fitA !== fitB) return fitB - fitA;
-      if (a.cost !== b.cost) return a.cost - b.cost;
-      return a.latencyMs - b.latencyMs;
-    });
-  return scored[0] ?? state.brains.find((b) => b.id === "local-heuristic")!;
-}
-
-function preferredChain(required: string): string[] {
-  if (required === "coding") return ["cloud-coder", "grok-4.5", "grok-fast", "local-heuristic"];
-  if (required === "research") return ["grok-4.5", "open-reasoner", "grok-fast", "local-heuristic"];
-  if (required === "planning") return ["grok-4.5", "grok-fast", "local-heuristic"];
-  if (required === "qc") return ["grok-fast", "open-reasoner", "local-heuristic"];
-  return ["grok-fast", "local-heuristic", "open-reasoner", "grok-4.5"];
+  return routeBrain(state, required, qualityNeed);
 }
 
 export function emit(
@@ -286,7 +262,7 @@ export function applyPlan(state: OrgSnapshot, objectiveId: string, plan: PlanInp
       skillId: skill?.id ?? null,
       requiredCapability: spec.capability,
       brainId: brain.id,
-      fallbacks: preferredChain(spec.capability).filter((id) => id !== brain.id),
+      fallbacks: capabilityChain(spec.capability).filter((id) => id !== brain.id),
       dependencies: i === 0 ? [] : created[i - 1] ? [created[i - 1].id] : [],
       progress: 0,
       plan: `Execute ${spec.capability} under ${dept.name} with independent QC.`,
@@ -570,6 +546,7 @@ function assignTask(state: OrgSnapshot, task: Task) {
   task.brainId = brain.id;
   task.livePending = Boolean(
     state.runtime?.liveMode &&
+      state.runtime?.routingMode !== "local-only" &&
       state.kpis.liveTurns < (state.runtime.liveCap ?? 4) &&
       state.budgets.apiCalls < state.budgets.apiCap,
   );
@@ -617,7 +594,9 @@ function independentQc(state: OrgSnapshot, task: Task, qc: Worker, _rand: () => 
     return false;
   }
   task.gate = 4;
-  task.claim = "fact";
+  // Author output is never world-fact just because QC let it through.
+  if (task.evidence.includes("code-run-pass")) task.claim = "fact";
+  else task.claim = "unverified_claim";
   return true;
 }
 
@@ -682,7 +661,7 @@ function storeLesson(state: OrgSnapshot, task: Task, ok: boolean) {
       ? task.output.slice(0, 400)
       : `Failed because: ${task.qcNotes || task.failures.at(-1)?.reason || "unknown"}. Do not reuse.`,
     status: ok ? "verified" : "rejected",
-    claim: ok ? "verified_fact" : "error",
+    claim: ok && task.evidence.includes("code-run-pass") ? "verified_fact" : ok ? "unverified_claim" : "error",
     tags: [task.requiredCapability, task.departmentId],
     evidence: task.evidence,
     createdBy: task.qcId ?? task.workerId ?? "ORG-CEO",
@@ -928,7 +907,15 @@ function recompute(state: OrgSnapshot) {
 export function tick(state: OrgSnapshot, steps = 1) {
   if (state.orgStatus !== "running") return;
   if (!state.runtime) {
-    state.runtime = { liveMode: false, liveInflight: 0, liveCap: 4, mode: "production", isolated: [] };
+    state.runtime = {
+      liveMode: false,
+      liveInflight: 0,
+      liveCap: 4,
+      mode: "production",
+      isolated: [],
+      routingMode: "local-only",
+      toolRuns: 0,
+    };
   }
   state.kpis.liveTurns ??= 0;
   state.kpis.localTurns ??= 0;
@@ -1275,6 +1262,14 @@ export function isolate(
 export function setLiveMode(state: OrgSnapshot, on: boolean) {
   if (!state.runtime) return;
   state.runtime.liveMode = on;
+  if (!on) state.runtime.routingMode = "local-only";
+  else if (state.runtime.routingMode === "local-only") state.runtime.routingMode = "auto";
+}
+
+export function setRoutingMode(state: OrgSnapshot, mode: OrgSnapshot["runtime"]["routingMode"]) {
+  if (!state.runtime) return;
+  state.runtime.routingMode = mode;
+  state.runtime.liveMode = mode !== "local-only";
 }
 
 export const GATE_LABELS = QUALITY_GATES;

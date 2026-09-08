@@ -10,6 +10,8 @@ export function ImproveView() {
   const epoch = useOrgStore((s) => s.epoch);
   const improvements = useOrgStore((s) => s.improvements);
   const kpis = useOrgStore((s) => s.kpis);
+  const memory = useOrgStore((s) => s.memory);
+  const lessons = memory.filter((m) => m.relatedTaskId && (m.status === "verified" || m.status === "rejected"));
   void epoch;
 
   return (
@@ -19,7 +21,8 @@ export function ImproveView() {
         <h1 className="mt-1 text-3xl font-medium tracking-tight">Controlled, never unrestricted.</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted">
           The organization can propose skills, routing, memory, and workflow changes. Production
-          changes pass sandbox, test, benchmark, QC, and approval. Rollback is mandatory.
+          changes pass sandbox, test, benchmark, QC, and approval. Rollback is mandatory. A lesson
+          is not trusted knowledge merely because a model wrote it.
         </p>
       </div>
 
@@ -76,6 +79,31 @@ export function ImproveView() {
           </Panel>
         ))
       )}
+
+      <Panel>
+        <PanelTitle kicker="Verified learning" title="Lessons that survived QC" />
+        {lessons.length === 0 ? (
+          <p className="text-sm text-muted">
+            No QC-gated lessons yet. Delivered work stores a verified or rejected memory with
+            provenance — scores are not increased as a substitute for learning.
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {lessons.slice(0, 12).map((m) => (
+              <li key={m.id}>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm">{m.title}</p>
+                  <Badge tone={m.status === "verified" ? "ok" : "danger"}>{m.status}</Badge>
+                </div>
+                <p className="mt-1 text-xs text-muted">{m.content.slice(0, 220)}</p>
+                <p className="mt-1 font-mono text-[10px] text-muted">
+                  claim {m.claim} · {m.evidence.join(", ") || "no tool evidence"}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
     </div>
   );
 }

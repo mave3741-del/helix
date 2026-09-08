@@ -531,7 +531,7 @@ export function seedOrganization(now = Date.now()): OrgSnapshot {
   return {
     version: 2,
     identity: {
-      name: "Helix",
+      name: "Helix 2.0",
       mission:
         "Execute Owner objectives through one organization: coordinated departments, verified work, replaceable brains, and durable memory.",
       ownerName: "Owner",
@@ -566,6 +566,8 @@ export function seedOrganization(now = Date.now()): OrgSnapshot {
       liveCap: 4,
       mode: "production",
       isolated: [],
+      routingMode: "auto",
+      toolRuns: 0,
     },
     tickMs: 420,
     epoch: 1,

@@ -33,7 +33,8 @@ export function WorkView() {
         <h1 className="mt-1 text-3xl font-medium tracking-tight">Persistent work, not chat.</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted">
           Ownership locks prevent duplicate work. Queues carry priority, retry, and cancellation.
-          Structured messages replace agent chatter.
+          Structured messages replace agent chatter. Execution source is labeled local, live, or
+          fallback — never “1,000 workers running.”
         </p>
       </div>
 

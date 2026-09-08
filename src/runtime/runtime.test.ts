@@ -83,3 +83,21 @@ test("worker package export is independently readable", () => {
   assert.ok(pack.specialization);
   assert.ok(Array.isArray(pack.tools));
 });
+
+test("local-only routing never marks live pending", async () => {
+  const { setRoutingMode, issueObjective, tick } = await import("../org/engine.ts");
+  const org = seedOrganization();
+  setRoutingMode(org, "local-only");
+  const oid = issueObjective(org, "Reformat the internal department codes list and run a non-destructive self-check.");
+  tick(org, 12);
+  const live = Object.values(org.tasks).filter((t) => t.objectiveId === oid && t.livePending);
+  assert.equal(live.length, 0);
+});
+
+test("fibonacci sandbox actually runs tests", async () => {
+  const { runFibonacciProject } = await import("./tools/sandbox.ts");
+  const result = await runFibonacciProject();
+  assert.equal(result.ok, true, result.stderr || result.stdout);
+  assert.equal(result.evidence, "code-run-pass");
+  assert.match(result.stdout, /passed/);
+});

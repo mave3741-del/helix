@@ -113,4 +113,18 @@ export const SCENARIO_DEFS = [
     spec: "A worker cannot read another worker's private memory.",
     objective: null,
   },
+  {
+    id: "t17",
+    n: 17,
+    name: "Honest concurrency",
+    spec: "1,000 identities exist. Local-only mode never marks live LLM turns as pending.",
+    objective: null,
+  },
+  {
+    id: "t18",
+    n: 18,
+    name: "Learning is gated",
+    spec: "A delivered task stores a lesson. LLM text is not auto-promoted to verified_fact without tool evidence.",
+    objective: "Prepare a one-page research brief on token-efficient organizational memory.",
+  },
 ] as const;

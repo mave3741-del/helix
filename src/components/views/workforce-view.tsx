@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Panel, PanelTitle, Stat } from "@/components/ui/panel";
 import { formatPct } from "@/lib/utils";
 import type { WorkerRole, WorkerStatus } from "@/org/types";
+import { exportWorkerPackage } from "@/runtime/migrate";
 import { useOrgStore } from "@/store/org-store";
 
 const PAGE = 24;
@@ -199,20 +200,38 @@ export function WorkforceView() {
               <Row k="Memory scope" v={worker.memoryScope} />
               <Row k="Done / fail" v={`${worker.performance.done} / ${worker.performance.fail}`} />
               <Row k="QC failures" v={String(worker.performance.qcFail)} />
-              <Row k="Corrections" v={String(worker.performance.corrections)} />
+              <Row k="Lessons" v={String(worker.agent?.lessons?.length ?? 0)} />
+              <Row k="Mistakes" v={String(worker.agent?.mistakes?.length ?? 0)} />
             </dl>
-            {worker.status !== "disabled" ? (
+            <div className="mt-4 flex flex-wrap gap-2">
               <Button
-                className="mt-4"
-                variant="danger"
                 size="sm"
-                onClick={() => useOrgStore.getState().disableWorker(worker.id, "Owner disable")}
+                variant="secondary"
+                onClick={() => {
+                  const pack = exportWorkerPackage(worker);
+                  const blob = new Blob([JSON.stringify(pack, null, 2)], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `${worker.agent?.registryId ?? worker.id}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
               >
-                Disable worker
+                Export agent package
               </Button>
-            ) : (
-              <p className="mt-4 text-xs text-danger">{worker.disabledReason}</p>
-            )}
+              {worker.status !== "disabled" ? (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => useOrgStore.getState().disableWorker(worker.id, "Owner disable")}
+                >
+                  Disable worker
+                </Button>
+              ) : (
+                <p className="text-xs text-danger">{worker.disabledReason}</p>
+              )}
+            </div>
           </Panel>
         ) : null}
       </div>

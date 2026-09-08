@@ -184,6 +184,12 @@ export type ExecutionSource = "pending" | "local" | "live" | "fallback";
 
 export type PriorityBand = "critical" | "high" | "normal" | "low" | "background";
 
+export type RoutingMode = "auto" | "local-only" | "hybrid" | "cloud-first";
+
+export type ConnectionState = "untested" | "connected" | "invalid" | "not_configured" | "offline";
+
+export type BrainKind = "cloud" | "local" | "heuristic" | "gateway";
+
 export interface PerformanceProfile {
   done: number;
   fail: number;
@@ -289,6 +295,9 @@ export interface Brain {
   lastError: string | null;
   consecutiveFails: number;
   contextWindow: number;
+  connection?: ConnectionState;
+  kind?: BrainKind;
+  endpoint?: string;
 }
 
 export interface SkillTest {
@@ -540,7 +549,9 @@ export interface RuntimeFlags {
   liveInflight: number;
   liveCap: number;
   mode: "development" | "test" | "staging" | "production";
-  isolated: { kind: "worker" | "department" | "team" | "task" | "tool" | "skill" | "provider"; id: string }[];
+  isolated: { kind: "worker" | "department" | "team" | "tool" | "skill" | "provider" | "task"; id: string }[];
+  routingMode: RoutingMode;
+  toolRuns: number;
 }
 
 export interface OrgSnapshot {

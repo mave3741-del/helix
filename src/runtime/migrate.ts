@@ -15,8 +15,12 @@ export function migrateSnapshot(state: OrgSnapshot): OrgSnapshot {
       liveCap: 4,
       mode: "production",
       isolated: [],
+      routingMode: "auto",
+      toolRuns: 0,
     };
   }
+  state.runtime.routingMode ??= state.runtime.liveMode ? "auto" : "local-only";
+  state.runtime.toolRuns ??= 0;
   for (const id of state.workerOrder ?? []) {
     const w = state.workers[id];
     if (w) ensureAgent(w);

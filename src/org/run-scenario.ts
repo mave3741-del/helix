@@ -5,7 +5,9 @@ import {
   grantApproval,
   issueObjective,
   setBrainAvailable,
+  setLiveMode,
   setOrgStatus,
+  setRoutingMode,
   tick,
 } from "./engine";
 import { SCENARIO_DEFS } from "./scenarios";
@@ -306,6 +308,33 @@ export function runScenario(state: OrgSnapshot, id: string): ScenarioResult {
         const hits = scopedMemory(state, worker, "research", 12);
         if (hits.some((m) => m.id === "mem-fw-test")) return failReturn(result, "Firewall leaked private memory");
         pass(result, "Context firewall blocked unauthorized worker memory");
+        break;
+      }
+      case "t17": {
+        const ids = state.workerOrder;
+        if (ids.length !== 1000) return failReturn(result, `Count ${ids.length} !== 1000`);
+        setRoutingMode(state, "local-only");
+        const oid = issueObjective(state, "Reformat the internal department codes list and run a non-destructive self-check.");
+        fastForward(state, 6);
+        const pendingLive = Object.values(state.tasks).filter((t) => t.objectiveId === oid && t.livePending);
+        if (pendingLive.length) return failReturn(result, "Local-only mode queued live LLM turns");
+        pass(result, "1,000 identities; local-only mode did not enqueue live LLM turns");
+        break;
+      }
+      case "t18": {
+        const oid = issueObjective(state, def!.objective!);
+        fastForward(state, 36);
+        const tasks = Object.values(state.tasks).filter((t) => t.objectiveId === oid && t.status === "delivered");
+        if (!tasks.length) {
+          log(result, "WAIT  Delivery still in progress — org continues");
+          break;
+        }
+        const lesson = state.memory.find((m) => m.relatedTaskId === tasks[0].id);
+        if (!lesson) return failReturn(result, "No lesson stored after delivery");
+        if (lesson.claim === "verified_fact" && !lesson.evidence.includes("code-run-pass")) {
+          return failReturn(result, "LLM/local output was auto-promoted to verified_fact");
+        }
+        pass(result, `Lesson stored as ${lesson.status}/${lesson.claim} with evidence gates`);
         break;
       }
       default:

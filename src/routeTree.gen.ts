@@ -18,6 +18,7 @@ import { Route as OrganizationRouteImport } from './routes/organization'
 import { Route as QualityRouteImport } from './routes/quality'
 import { Route as ScenariosRouteImport } from './routes/scenarios'
 import { Route as SkillsRouteImport } from './routes/skills'
+import { Route as ToolsRouteImport } from './routes/tools'
 import { Route as WorkRouteImport } from './routes/work'
 import { Route as WorkforceRouteImport } from './routes/workforce'
 
@@ -66,6 +67,11 @@ const SkillsRoute = SkillsRouteImport.update({
   path: '/skills',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ToolsRoute = ToolsRouteImport.update({
+  id: '/tools',
+  path: '/tools',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WorkRoute = WorkRouteImport.update({
   id: '/work',
   path: '/work',
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/quality': typeof QualityRoute
   '/scenarios': typeof ScenariosRoute
   '/skills': typeof SkillsRoute
+  '/tools': typeof ToolsRoute
   '/work': typeof WorkRoute
   '/workforce': typeof WorkforceRoute
 }
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/quality': typeof QualityRoute
   '/scenarios': typeof ScenariosRoute
   '/skills': typeof SkillsRoute
+  '/tools': typeof ToolsRoute
   '/work': typeof WorkRoute
   '/workforce': typeof WorkforceRoute
 }
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/quality': typeof QualityRoute
   '/scenarios': typeof ScenariosRoute
   '/skills': typeof SkillsRoute
+  '/tools': typeof ToolsRoute
   '/work': typeof WorkRoute
   '/workforce': typeof WorkforceRoute
 }
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/quality'
     | '/scenarios'
     | '/skills'
+    | '/tools'
     | '/work'
     | '/workforce'
   fileRoutesByTo: FileRoutesByTo
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/quality'
     | '/scenarios'
     | '/skills'
+    | '/tools'
     | '/work'
     | '/workforce'
   id:
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/quality'
     | '/scenarios'
     | '/skills'
+    | '/tools'
     | '/work'
     | '/workforce'
   fileRoutesById: FileRoutesById
@@ -169,6 +181,7 @@ export interface RootRouteChildren {
   QualityRoute: typeof QualityRoute
   ScenariosRoute: typeof ScenariosRoute
   SkillsRoute: typeof SkillsRoute
+  ToolsRoute: typeof ToolsRoute
   WorkRoute: typeof WorkRoute
   WorkforceRoute: typeof WorkforceRoute
 }
@@ -238,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SkillsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tools': {
+      id: '/tools'
+      path: '/tools'
+      fullPath: '/tools'
+      preLoaderRoute: typeof ToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/work': {
       id: '/work'
       path: '/work'
@@ -265,6 +285,7 @@ const rootRouteChildren: RootRouteChildren = {
   QualityRoute: QualityRoute,
   ScenariosRoute: ScenariosRoute,
   SkillsRoute: SkillsRoute,
+  ToolsRoute: ToolsRoute,
   WorkRoute: WorkRoute,
   WorkforceRoute: WorkforceRoute,
 }

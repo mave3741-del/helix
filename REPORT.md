@@ -1,4 +1,4 @@
-# Helix — AI Organization OS
+# Helix 2.0 — AI Organization OS
 
 **Project report**  
 **Version:** 1.0.0  

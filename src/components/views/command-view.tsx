@@ -41,7 +41,13 @@ export function CommandView() {
     const id = store.issue(value);
     store.setPlanning(true);
     try {
-      const plan = await planObjective({ data: { text: value, mission: store.identity.mission } });
+      const plan = await planObjective({
+        data: {
+          text: value,
+          mission: store.identity.mission,
+          routingMode: store.runtime?.routingMode,
+        },
+      });
       if (plan.ok) store.applyCeoPlan(id, plan);
       else store.setPlanning(false, plan.error);
     } catch {
@@ -61,8 +67,8 @@ export function CommandView() {
           {identity.mission}
         </p>
         <p className="mt-2 font-mono text-[11px] tracking-[0.14em] text-live uppercase">
-          Runtime {runtime?.mode ?? "production"} · live brains {runtime?.liveMode ? "on" : "off"} · cap{" "}
-          {runtime?.liveCap ?? 4} cloud turns / objective burst
+          Runtime {runtime?.mode ?? "production"} · routing {runtime?.routingMode ?? "auto"} · live cap{" "}
+          {runtime?.liveCap ?? 4} · 1,000 identities (not 1,000 parallel LLMs)
         </p>
       </div>
 
@@ -83,10 +89,14 @@ export function CommandView() {
             Dispatch
           </Button>
           <Button
-            variant={runtime?.liveMode ? "default" : "secondary"}
-            onClick={() => useOrgStore.getState().setLive(!runtime?.liveMode)}
+            variant={runtime?.routingMode === "local-only" ? "secondary" : "default"}
+            onClick={() =>
+              useOrgStore
+                .getState()
+                .setRouting(runtime?.routingMode === "local-only" ? "auto" : "local-only")
+            }
           >
-            {runtime?.liveMode ? "Live brains" : "Local only"}
+            {runtime?.routingMode === "local-only" ? "Local only" : "Live routing"}
           </Button>
           <span className="text-xs text-muted">⌘↵ to send · risk-classified automatically</span>
         </div>
